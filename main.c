@@ -38,12 +38,6 @@ int main() {
         int left_mouse_button_down = mask & Button1Mask;
         int ctrl_key_pressed = mask & ControlMask;
 
-        // If either left mouse button is down or CTRL key is pressed, skip the rest of the loop
-        if (left_mouse_button_down || ctrl_key_pressed) {
-            usleep(10000);
-            continue;
-        }
-
         // Find which screen (monitor) the cursor is currently on
         int current_screen_id = -1;
         for (int i = 0; i < num_screens; i++) {
@@ -54,9 +48,18 @@ int main() {
             }
         }
 
+        // If either left mouse button is down or CTRL key is pressed, skip the rest of the loop
+        if (left_mouse_button_down || ctrl_key_pressed) {
+            if (ctrl_key_pressed) {
+                last_screen_id = current_screen_id;
+            }
+            usleep(10000);
+            continue;
+        }
+
         if (last_screen_id != -1 && current_screen_id != last_screen_id) {
             // If there's a change in active screen ID, restore the cursor position
-            XWarpPointer(dpy, None, root, 0, 0, 0, 0, last_x, last_y);
+            XWarpPointer(dpy, None, root, 0, 0, 0, 0, last_x, y);
             printf("Cursor Warped back to: x=%d, y=%d\n", last_x, last_y);
         } else {
             // Update the last known position and screen ID
