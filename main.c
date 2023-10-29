@@ -12,8 +12,9 @@ int main() {
     int win_x, win_y;
     unsigned int mask;
     XineramaScreenInfo *screens;
-    int num_screens, i;
-    int screen_width, screen_height;
+    int num_screens;
+    int last_screen_id = -1;  // Initially set to an invalid ID
+    int last_x, last_y;       // Store last cursor position relative to the display
 
     dpy = XOpenDisplay(NULL);
     if (dpy == NULL) {
@@ -29,32 +30,30 @@ int main() {
     }
 
     screens = XineramaQueryScreens(dpy, &num_screens);
-    
+
     while (1) {
         XQueryPointer(dpy, root, &root, &child, &x, &y, &win_x, &win_y, &mask);
         printf("Cursor Position: x=%d, y=%d\n", x, y);
 
         // Find which screen (monitor) the cursor is currently on
-        for (i = 0; i < num_screens; i++) {
+        int current_screen_id = -1;
+        for (int i = 0; i < num_screens; i++) {
             if (x >= screens[i].x_org && x < screens[i].x_org + screens[i].width &&
                 y >= screens[i].y_org && y < screens[i].y_org + screens[i].height) {
-                screen_width = screens[i].width;
-                screen_height = screens[i].height;
+                current_screen_id = i;
                 break;
             }
         }
 
-        printf("Current Screen Dimensions: width=%d, height=%d\n", screen_width, screen_height);
-
-        // Check boundaries of the current screen and adjust position if necessary
-        if (x <= screens[i].x_org || y <= screens[i].y_org || x >= screens[i].x_org + screen_width - 1 || y >= screens[i].y_org + screen_height - 1) {
-            if (x <= screens[i].x_org) x = screens[i].x_org + 1;
-            if (y <= screens[i].y_org) y = screens[i].y_org + 1;
-            if (x >= screens[i].x_org + screen_width - 1) x = screens[i].x_org + screen_width - 2;
-            if (y >= screens[i].y_org + screen_height - 1) y = screens[i].y_org + screen_height - 2;
-
-            XWarpPointer(dpy, None, root, 0, 0, 0, 0, x, y);
-            printf("Cursor Warped to: x=%d, y=%d\n", x, y);
+        if (last_screen_id != -1 && current_screen_id != last_screen_id) {
+            // If there's a change in active screen ID, restore the cursor position
+            XWarpPointer(dpy, None, root, 0, 0, 0, 0, last_x, last_y);
+            printf("Cursor Warped back to: x=%d, y=%d\n", last_x, last_y);
+        } else {
+            // Update the last known position and screen ID
+            last_x = x;
+            last_y = y;
+            last_screen_id = current_screen_id;
         }
 
         usleep(10000); // Sleep for 10 milliseconds to reduce CPU usage
