@@ -35,6 +35,15 @@ int main() {
         XQueryPointer(dpy, root, &root, &child, &x, &y, &win_x, &win_y, &mask);
         printf("Cursor Position: x=%d, y=%d\n", x, y);
 
+        int left_mouse_button_down = mask & Button1Mask;
+        int ctrl_key_pressed = mask & ControlMask;
+
+        // If either left mouse button is down or CTRL key is pressed, skip the rest of the loop
+        if (left_mouse_button_down || ctrl_key_pressed) {
+            usleep(10000);
+            continue;
+        }
+
         // Find which screen (monitor) the cursor is currently on
         int current_screen_id = -1;
         for (int i = 0; i < num_screens; i++) {
